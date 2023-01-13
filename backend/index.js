@@ -3,6 +3,7 @@ const cors = require("cors");
 const { default: mongoose } = require("mongoose");
 const userModel = require("./models/user.model");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const app = express();
 
 app.use(cors());
@@ -14,10 +15,11 @@ mongoose
     //signup
     app.post("/api/v1/user/signup", async (req, res) => {
       try {
+        const hashedPassword = bcrypt.hashSync(req.body.password);
         const user = await userModel.create({
           name: req.body.name,
           email: req.body.email,
-          password: req.body.password,
+          password: hashedPassword,
         });
         res.json({
           status: "ok",
@@ -33,10 +35,11 @@ mongoose
     app.post("/api/v1/user/login", async (req, res) => {
       try {
         const dbUser = await userModel.findOne({ email: req.body.email });
-        if (
-          dbUser?.email === req.body?.email &&
-          dbUser?.password === req.body?.password
-        ) {
+        const validatePassword = bcrypt.compareSync(
+          req.body?.password,
+          dbUser?.password
+        );
+        if (dbUser?.email === req.body?.email && validatePassword) {
           const token = jwt.sign(
             { email: dbUser.email, name: dbUser.name },
             "djfhgjehindsfjgnjksdhdshjfg12323412"
